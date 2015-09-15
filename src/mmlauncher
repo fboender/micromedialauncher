@@ -1,0 +1,202 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*-
+
+import sys
+import os
+import ConfigParser
+try:
+    from Tkinter import *
+except ImportError:
+    sys.stderr.write("Looks like the Tkinter toolkit is not installed.\n"
+                     "Install it with:  sudo apt-get install python-tk\n")
+    sys.exit(1)
+
+
+class Interface(object):
+    def __init__(self, callback, bg="black", fg="white", font=("Helvetica", 36)):
+        self.callback = callback
+        self.bg = bg
+        self.fg = fg
+        self.font = font
+
+        self.root = Tk()
+        self.root.attributes("-fullscreen", True)
+        self.root.bind("<Escape>", lambda e: e.widget.quit())
+
+        scrollbar = Scrollbar(self.root)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        self.listbox = Listbox(self.root, yscrollcommand=scrollbar.set,
+                               font=self.font, bg=self.bg, fg=self.fg,
+                               selectborderwidth=0, borderwidth=50,
+                               relief='flat')
+        self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
+        self.listbox.bind("<Return>", self.listbox_activate)
+        self.listbox.bind("<BackSpace>", self.listbox_back)
+
+        scrollbar.config(command=self.listbox.yview, bg=self.bg)
+
+    def set_files(self, file_list):
+        self.listbox.delete(0, END)
+
+        self.listbox.insert(END, "⇦ Back")
+        self.listbox.itemconfig(END, fg='steel blue')
+        for item in file_list:
+            self.listbox.insert(END, item['title'])
+            self.listbox.itemconfig(END, fg=item['color'])
+        self.listbox.selection_set(0)
+        self.listbox.focus_set()
+
+    def listbox_activate(self, event):
+        cursel = event.widget.curselection()[0]
+        if cursel == 0:
+            cur_item = '..'
+        else:
+            cur_item = self.listbox.get(cursel)
+
+        self.callback(cur_item)
+
+    def listbox_back(self, event):
+        self.callback('..')
+
+
+class MediaMeta(object):
+    def __init__(self):
+        self.media_types = {
+            "unknown": {
+                "color": "white",
+                "command": "xdg-open '%s'"
+            }
+        }
+        self.media_extensions = {}
+
+    def add_media_extension(self, extension, media_type):
+        self.media_extensions[extension] = media_type
+
+    def add_media_type(self, media_type, color="white", command="xdg-open '%s'"):
+        self.media_types[media_type] = {
+            "color": color,
+            "command": command,
+        }
+
+    def get_file_media_type(self, path):
+        extension = os.path.splitext(path)[1].lstrip('.')
+        media_type = self.media_extensions.get(extension, 'unknown')
+        return self.media_types[media_type]
+
+    def get_file_color(self, path):
+        media_type = self.get_file_media_type(path)
+        return media_type['color']
+
+    def get_file_command(self, path):
+        media_type = self.get_file_media_type(path)
+        return media_type['command']
+
+
+class MediaLister(object):
+    def __init__(self, path, mediameta):
+        self.path = path
+        self.mediameta = mediameta
+
+    def read_dir(self, path):
+        file_list = []
+        for fname in self._read_sorted_dir(path):
+            fullpath = os.path.join(path, fname)
+            color = self.mediameta.get_file_color(fullpath)
+            file_list.append(
+                {
+                    'title': fname,
+                    'color': color,
+                }
+            )
+        return file_list
+
+    def _read_sorted_dir(self, path):
+        """
+        Return a sorted list of file and directory names in path.
+        """
+        dirs = []
+        files = []
+        for fname in os.listdir(path):
+            fullpath = os.path.join(path, fname)
+            if os.path.isdir(fullpath):
+                dirs.append(fname + '/')
+            else:
+                files.append(fname)
+
+        return sorted(dirs) + sorted(files)
+
+
+class MediaRunner(object):
+    def __init__(self, mediameta):
+        self.mediameta = mediameta
+
+    def run(self, path):
+        cmd = self.mediameta.get_file_command(path)
+        os.system(cmd % (path))
+
+class Controller(object):
+    def __init__(self, config_files, path):
+        self.config_files = config_files
+        self.path = path
+
+        self.mediameta = MediaMeta()
+        self.read_config(self.config_files)
+        self.medialister = MediaLister(path, self.mediameta)
+        self.mediarunner = MediaRunner(self.mediameta)
+        interface_font = (self.cfg.get('main', 'font_family'),
+                          self.cfg.get('main', 'font_size'))
+        self.interface = Interface(self.activate_cb,
+                                   bg=self.cfg.get('main', 'bg'),
+                                   fg=self.cfg.get('main', 'fg'),
+                                   font=interface_font)
+
+        self.handle_path(path)
+
+    def read_config(self, config_files):
+        self.cfg = ConfigParser.ConfigParser()
+        self.cfg.read(config_files)
+
+        # Read media meta types
+        media_types = {}
+        for media_name, color in self.cfg.items('media_colors'):
+            media_types.setdefault(media_name, {})['color'] = color
+        for media_name, command in self.cfg.items('commands'):
+            media_types.setdefault(media_name, {})['command'] = command
+        for media_name, media_meta in media_types.items():
+            self.mediameta.add_media_type(media_name,
+                                          media_meta['color'],
+                                          media_meta['command'])
+
+        # Read media extensions
+        for extension, media_name in self.cfg.items('extensions'):
+            self.mediameta.add_media_extension(extension, media_name)
+
+    def handle_path(self, path):
+        if os.path.isdir(path):
+            self.path = path
+            file_info = self.medialister.read_dir(path)
+            self.interface.set_files(file_info)
+        else:
+            self.mediarunner.run(path)
+
+    def activate_cb(self, fname):
+        fullpath = os.path.join(self.path, fname)
+        self.handle_path(fullpath)
+
+    def run(self):
+        mainloop()
+
+if __name__ == "__main__":
+    # Commandline arguments
+    if len(sys.argv) < 2:
+        sys.stderr.write("Usage: {} <directory>\n".format(sys.argv[0]))
+        sys.exit(1)
+
+    # Configuration file
+    config_files = [
+        'mmlauncher.conf',
+        os.path.expanduser('~/.mmlauncher.conf')
+    ]
+    controller = Controller(config_files, sys.argv[1])
+    controller.run()
