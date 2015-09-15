@@ -9,6 +9,10 @@ with a large font. It has no plugins, doesn't fetch pretty pictures, doesn't
 send info on every movie you watch all over the internet. It also doesn't crash
 and is exeptionally fast. It has almost no dependencies.
 
+This is what it looks like:
+
+![](https://raw.githubusercontent.com/fboender/micromedialauncher/master/screenshots.png)
+
 ## Installation
 
 Install the requirement:
