@@ -4,6 +4,7 @@
 import sys
 import os
 import ConfigParser
+import json
 try:
     from Tkinter import *
 except ImportError:
@@ -70,6 +71,10 @@ class Interface(object):
     def listbox_back(self, event):
         self.callback('..')
 
+    def mark_watched(self, item_name, watched_color):
+        for index, item in enumerate(self.listbox.get(0, END)):
+            if item == item_name:
+                self.listbox.itemconfig(index, fg=watched_color)
 
 class MediaMeta(object):
     def __init__(self):
@@ -104,11 +109,15 @@ class MediaLister(object):
         self.path = path
         self.mediameta = mediameta
 
-    def read_dir(self, path):
+    def read_dir(self, path, watched, watched_color='dim gray'):
         file_list = []
         for fname in self._read_sorted_dir(path):
             fullpath = os.path.join(path, fname)
-            color = self.mediameta.get_file_color(fullpath)
+            print watched, fullpath
+            if fullpath in watched:
+                color = watched_color
+            else:
+                color = self.mediameta.get_file_color(fullpath)
             file_list.append(
                 {
                     'title': fname,
@@ -141,10 +150,13 @@ class MediaRunner(object):
         cmd = self.mediameta.get_file_command(path)
         os.system(cmd % (path))
 
+
 class Controller(object):
-    def __init__(self, config_files, path):
+    def __init__(self, config_files, watched_file, path):
         self.config_files = config_files
-        self.path = path
+        self.watched_file = watched_file
+        self.path = os.path.realpath(path)
+        self.watched = self.read_watched_file()
 
         self.mediameta = MediaMeta()
         self.read_config(self.config_files)
@@ -178,22 +190,41 @@ class Controller(object):
         for extension, media_name in self.cfg.items('extensions'):
             self.mediameta.add_media_extension(extension, media_name)
 
+    def read_watched_file(self):
+        try:
+            return json.load(file(self.watched_file, 'r'))
+        except IOError:
+            return {}
+
+    def write_watched_file(self):
+        json.dump(self.watched, file(self.watched_file, 'w'))
+
     def handle_path(self, path):
         if os.path.isdir(path):
-            self.path = path
-            file_info = self.medialister.read_dir(path)
+            self.path = os.path.realpath(path)
+            file_info = self.medialister.read_dir(path, self.watched,
+                                                  self.cfg.get('main', 'watched_color'))
             self.interface.set_files(file_info)
         else:
             self.mediarunner.run(path)
+            self.watched[path] = True
+            self.write_watched_file()
 
     def activate_cb(self, fname):
-        fullpath = os.path.join(self.path, fname)
+        fullpath = os.path.realpath(os.path.join(self.path, fname))
         self.handle_path(fullpath)
+        if not os.path.isdir(fullpath):
+            self.interface.mark_watched(fname, self.cfg.get('main', 'watched_color'))
 
     def run(self):
         mainloop()
 
 if __name__ == "__main__":
+    # Configuration dir
+    confdir = os.path.expanduser('~/.mmlauncher')
+    if not os.path.isdir(confdir):
+        os.mkdir(confdir)
+
     # Commandline arguments
     if len(sys.argv) < 2:
         sys.stderr.write("Usage: {} <directory>\n".format(sys.argv[0]))
@@ -202,7 +233,8 @@ if __name__ == "__main__":
     # Configuration file
     config_files = [
         'mmlauncher.conf',
-        os.path.expanduser('~/.mmlauncher.conf')
+        os.path.expanduser('~/.mmlauncher/mmlauncher.conf')
     ]
-    controller = Controller(config_files, sys.argv[1])
+    watched_file = os.path.expanduser('~/.mmlauncher/watched.json')
+    controller = Controller(config_files, watched_file, sys.argv[1])
     controller.run()
