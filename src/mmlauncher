@@ -18,6 +18,7 @@ class Interface(object):
         self.bg = bg
         self.fg = fg
         self.font = font
+        self.activated_stack = []
 
         self.root = Tk()
         self.root.attributes("-fullscreen", True)
@@ -41,10 +42,17 @@ class Interface(object):
 
         self.listbox.insert(END, "⇦ Back")
         self.listbox.itemconfig(END, fg='steel blue')
+        self.listbox.activate(0)
+        self.listbox.selection_set(0)
+
         for item in file_list:
             self.listbox.insert(END, item['title'])
             self.listbox.itemconfig(END, fg=item['color'])
-        self.listbox.selection_set(0)
+            if self.activated_stack and self.activated_stack[-1] == item['title']:
+                self.activated_stack.pop()
+                self.listbox.activate(END)
+                self.listbox.selection_clear(0, END)
+                self.listbox.selection_set(END)
         self.listbox.focus_set()
 
     def listbox_activate(self, event):
@@ -53,6 +61,8 @@ class Interface(object):
             cur_item = '..'
         else:
             cur_item = self.listbox.get(cursel)
+            if cur_item.endswith('/'):
+                self.activated_stack.append(cur_item)
 
         self.callback(cur_item)
 
