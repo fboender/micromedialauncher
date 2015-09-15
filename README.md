@@ -7,7 +7,7 @@ centers with all their bells and whistles.
 mmlauncher supports NOTHING. It's nothing more than a file browser / launcher
 with a large font. It has no plugins, doesn't fetch pretty pictures, doesn't
 send info on every movie you watch all over the internet. It also doesn't crash
-and is exeptionally fast. It has almost no dependencies.
+and is exceptionally fast. It has almost no dependencies.
 
 This is what it looks like:
 
