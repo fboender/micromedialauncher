@@ -1,4 +1,4 @@
-# MircoMediaLauncher
+# MicroMediaLauncher
 
 MicroMediaLauncher (mmlauncher) is a super-lightweight media browser and
 launcher. It was written because I got tired of slow, laggy, crashing media
