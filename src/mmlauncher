@@ -14,7 +14,15 @@ except ImportError:
 
 
 class Interface(object):
+    """
+    Interface of MicroMediaLauncher.
+    """
     def __init__(self, callback, bg="black", fg="white", font=("Helvetica", 36)):
+        """
+        `callback` is a callable which will be called when the user activates
+        an item (dir, file). It will be passed the item's name. `bg` and `fg`
+        control the interface color. `font` controls the interface font.
+        """
         self.callback = callback
         self.bg = bg
         self.fg = fg
@@ -33,12 +41,22 @@ class Interface(object):
                                selectborderwidth=0, borderwidth=50,
                                relief='flat')
         self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
-        self.listbox.bind("<Return>", self.listbox_activate)
-        self.listbox.bind("<BackSpace>", self.listbox_back)
+        self.listbox.bind("<Return>", self._listbox_activate)
+        self.listbox.bind("<BackSpace>", self._listbox_back)
 
         scrollbar.config(command=self.listbox.yview, bg=self.bg)
 
     def set_files(self, file_list):
+        """
+        Set the files to display in the interface to `file_list`. It should be
+        a list containing dictionaries, where each dictionary is like:
+
+           {
+             "title": "My.Movie.avi",
+             "color": "red"
+           }
+
+        """
         self.listbox.delete(0, END)
 
         self.listbox.insert(END, "⇦ Back")
@@ -57,7 +75,10 @@ class Interface(object):
                 self.listbox.see(END)
         self.listbox.focus_set()
 
-    def listbox_activate(self, event):
+    def _listbox_activate(self, event):
+        """
+        Event callback when the user activates an item.
+        """
         cursel = event.widget.curselection()[0]
         if cursel == 0:
             cur_item = '..'
@@ -68,15 +89,26 @@ class Interface(object):
 
         self.callback(cur_item)
 
-    def listbox_back(self, event):
+    def _listbox_back(self, event):
+        """
+        Event callback when the user pressed Backspace.
+        """
         self.callback('..')
 
     def mark_watched(self, item_name, watched_color):
+        """
+        Mark the item in the list with title `item_name` with the color given
+        in `watched_color`.
+        """
         for index, item in enumerate(self.listbox.get(0, END)):
             if item == item_name:
                 self.listbox.itemconfig(index, fg=watched_color)
 
 class MediaMeta(object):
+    """
+    Hold meta information on how to handle media in mmlauncher, such as
+    commands and colors.
+    """
     def __init__(self):
         self.media_types = {}
         self.media_extensions = {}
