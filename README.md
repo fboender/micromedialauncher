@@ -11,7 +11,7 @@ and is exeptionally fast. It has almost no dependencies.
 
 This is what it looks like:
 
-![](https://raw.githubusercontent.com/fboender/micromedialauncher/master/screenshots.png)
+![](https://raw.githubusercontent.com/fboender/micromedialauncher/master/screenshot.png)
 
 ## Installation
 
