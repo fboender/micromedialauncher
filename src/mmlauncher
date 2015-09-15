@@ -62,12 +62,7 @@ class Interface(object):
 
 class MediaMeta(object):
     def __init__(self):
-        self.media_types = {
-            "unknown": {
-                "color": "white",
-                "command": "xdg-open '%s'"
-            }
-        }
+        self.media_types = {}
         self.media_extensions = {}
 
     def add_media_extension(self, extension, media_type):
@@ -81,7 +76,7 @@ class MediaMeta(object):
 
     def get_file_media_type(self, path):
         extension = os.path.splitext(path)[1].lstrip('.')
-        media_type = self.media_extensions.get(extension, 'unknown')
+        media_type = self.media_extensions.get(extension, 'default')
         return self.media_types[media_type]
 
     def get_file_color(self, path):
