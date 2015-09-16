@@ -145,7 +145,6 @@ class MediaLister(object):
         file_list = []
         for fname in self._read_sorted_dir(path):
             fullpath = os.path.join(path, fname)
-            print watched, fullpath
             if fullpath in watched:
                 color = watched_color
             else:
