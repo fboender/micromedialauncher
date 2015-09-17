@@ -70,11 +70,9 @@ class Interface(object):
             self.listbox.insert(END, item['title'])
             self.listbox.itemconfig(END, fg=item['color'])
             if self.activated_stack and self.activated_stack[-1] == item['title']:
+                # Select previously selected item
                 self.activated_stack.pop()
-                self.listbox.activate(END)
-                self.listbox.selection_clear(0, END)
-                self.listbox.selection_set(END)
-                self.listbox.see(END)
+                self._listbox_move_cur(END)
         self.listbox.focus_set()
 
     def _listbox_move_cur(self, i):
