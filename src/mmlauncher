@@ -43,6 +43,8 @@ class Interface(object):
         self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
         self.listbox.bind("<Return>", self._listbox_activate)
         self.listbox.bind("<BackSpace>", self._listbox_back)
+        self.listbox.bind("<Up>", self._listbox_up)
+        self.listbox.bind("<Down>", self._listbox_down)
 
         scrollbar.config(command=self.listbox.yview, bg=self.bg)
 
@@ -75,6 +77,12 @@ class Interface(object):
                 self.listbox.see(END)
         self.listbox.focus_set()
 
+    def _listbox_move_cur(self, i):
+        self.listbox.activate(i)
+        self.listbox.selection_clear(0, END)
+        self.listbox.selection_set(i)
+        self.listbox.see(i)
+
     def _listbox_activate(self, event):
         """
         Event callback when the user activates an item.
@@ -94,6 +102,25 @@ class Interface(object):
         Event callback when the user pressed Backspace.
         """
         self.callback('..')
+
+    def _listbox_up(self, event):
+        """
+        Move cursor to bottom if pressing Up on first item
+        """
+        cursel = event.widget.curselection()[0]
+        if cursel == 0:
+            self._listbox_move_cur(END)
+            return "break"
+
+    def _listbox_down(self, event):
+        """
+        Move cursor to top if pressing Down on last item
+        """
+        cursel = event.widget.curselection()[0]
+        end = len(self.listbox.get(0, END))
+        if cursel == end - 1:
+            self._listbox_move_cur(0)
+            return "break"
 
     def mark_watched(self, item_name, watched_color):
         """
