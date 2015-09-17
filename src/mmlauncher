@@ -45,6 +45,7 @@ class Interface(object):
         self.listbox.bind("<BackSpace>", self._listbox_back)
         self.listbox.bind("<Up>", self._listbox_up)
         self.listbox.bind("<Down>", self._listbox_down)
+        self.listbox.bind("<Key>", self._listbox_key)
 
         scrollbar.config(command=self.listbox.yview, bg=self.bg)
 
@@ -119,6 +120,25 @@ class Interface(object):
         if cursel == end - 1:
             self._listbox_move_cur(0)
             return "break"
+
+    def _listbox_search(self, letter):
+        """
+        Move the cursor to the next item that starts with (lowercase) letter.
+        Wraps the search to the top.
+        """
+        cursel = self.listbox.curselection()[0]
+        size = len(list(self.listbox.get(0, END)))
+        for i in range(cursel + 1, size) + range(0, cursel):
+            item = self.listbox.get(i)
+            if item[0].lower() == letter:
+                self._listbox_move_cur(i)
+                break
+
+    def _listbox_key(self, event):
+        if (event.keysym_num >= 97 and event.keysym_num <= 122) or \
+           (event.keysym_num >= 65 and event.keysym_num <= 90) or \
+           (event.keysym_num >= 48 and event.keysym_num <= 57):
+            self._listbox_search(event.keysym.lower())
 
     def mark_watched(self, item_name, watched_color):
         """

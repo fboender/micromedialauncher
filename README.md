@@ -34,6 +34,7 @@ and done.
     <Enter>: Enter dir or launch file under cursor
     <Backspace>: Go up one dir
     <Escape> / <Alt-F4>: Quit
+    A-Z / a-z / 0-9: Jump to next item that starts with this key.
 
 ## License
 
