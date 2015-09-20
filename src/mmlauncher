@@ -59,7 +59,8 @@ class Interface(object):
     def report_callback_exception(self, *args):
         err = traceback.format_exception(*args)
         tkMessageBox.showerror('Exception', str(args[1]))
-        raise err
+        for line in err:
+            sys.stderr.write(line)
 
     def set_files(self, file_list):
         """
