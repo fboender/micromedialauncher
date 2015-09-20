@@ -35,6 +35,7 @@ class Interface(object):
         self.root.report_callback_exception = self.report_callback_exception
         self.root.attributes("-fullscreen", True)
         self.root.bind("<Escape>", lambda e: e.widget.quit())
+        self.root.option_add('*Dialog.msg.font', 'Helvetica 22')
 
         self.header_text = StringVar()
         self.header = Label(self.root, textvariable=self.header_text, bg="gray15", fg="white",
@@ -44,10 +45,10 @@ class Interface(object):
         scrollbar = Scrollbar(self.root)
         scrollbar.pack(side=RIGHT, fill=Y)
 
-        self.listbox = Listbox(self.root, yscrollcommand=scrollbar.set,
-                               font=self.font, bg=self.bg, fg=self.fg,
-                               selectborderwidth=0, borderwidth=50,
-                               relief='flat')
+        self.listbox = Listbox(self.root, selectmode=EXTENDED,
+                               yscrollcommand=scrollbar.set, font=self.font,
+                               bg=self.bg, fg=self.fg, selectborderwidth=0,
+                               borderwidth=50, relief='flat')
         self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
         self.listbox.bind("<Return>", self._listbox_activate)
         self.listbox.bind("<BackSpace>", self._listbox_back)
