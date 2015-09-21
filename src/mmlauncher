@@ -76,11 +76,6 @@ class Interface(object):
         """
         self.listbox.delete(0, END)
 
-        self.listbox.insert(END, "⇦ Back")
-        self.listbox.itemconfig(END, fg='steel blue')
-        self.listbox.activate(0)
-        self.listbox.selection_set(0)
-
         for item in file_list:
             self.listbox.insert(END, item['title'])
             self.listbox.itemconfig(END, fg=item['color'])
@@ -89,6 +84,9 @@ class Interface(object):
                 self.activated_stack.pop()
                 self._listbox_move_cur(END)
         self.listbox.focus_set()
+        if not self.listbox.curselection():
+            self.listbox.activate(0)
+            self.listbox.selection_set(0)
 
     def set_path(self, path):
         self.header_text.set(path)
@@ -104,12 +102,9 @@ class Interface(object):
         Event callback when the user activates an item.
         """
         cursel = event.widget.curselection()[0]
-        if cursel == 0:
-            cur_item = '..'
-        else:
-            cur_item = self.listbox.get(cursel)
-            if cur_item.endswith('/'):
-                self.activated_stack.append(cur_item)
+        cur_item = self.listbox.get(cursel)
+        if cur_item.endswith('/'):
+            self.activated_stack.append(cur_item)
 
         self.callback(cur_item)
 
@@ -251,9 +246,10 @@ class Controller(object):
         self.start_path = os.path.realpath(path)
         self.path = os.path.realpath(path)
         self.watched = self.read_watched_file()
-
+        self.back_text = u"⇦ Back"
         self.mediameta = MediaMeta()
         self.read_config(self.config_files)
+        self.jail_root = self.cfg.getboolean('main', 'jail_root')
         self.medialister = MediaLister(path, self.mediameta)
         self.mediarunner = MediaRunner(self.mediameta)
         interface_font = (self.cfg.get('main', 'font_family'),
@@ -294,23 +290,38 @@ class Controller(object):
         json.dump(self.watched, file(self.watched_file, 'w'))
 
     def handle_path(self, path):
+        # Prevent escape from start path if jail_root
+        if self.jail_root and not path.rstrip().startswith(self.start_path):
+            return False
+
         if os.path.isdir(path):
-            self.path = os.path.realpath(path)
-            file_info = self.medialister.read_dir(path, self.watched,
-                                                  self.cfg.get('main', 'watched_color'))
+            file_info = []
+            if self.jail_root and path.rstrip('/') != self.start_path:
+                file_info.append(
+                    {
+                        "title": self.back_text,
+                        "color": "steel blue"
+                    }
+                )
+            file_info.extend(self.medialister.read_dir(path, self.watched,
+                                                       self.cfg.get('main', 'watched_color')))
             self.interface.set_files(file_info)
             if path.startswith(self.start_path):
                 relpath = path[len(self.start_path) + 1:]
             else:
                 relpath = path
             self.interface.set_path(relpath)
+            self.path = os.path.realpath(path)
         else:
             self.mediarunner.run(path)
             self.watched[path] = True
             self.write_watched_file()
 
     def activate_cb(self, fname):
+        if fname == self.back_text:
+            fname = '..'
         fullpath = os.path.realpath(os.path.join(self.path, fname))
+        print fullpath, self.start_path
         self.handle_path(fullpath)
         if not os.path.isdir(fullpath):
             self.interface.mark_watched(fname, self.cfg.get('main', 'watched_color'))
