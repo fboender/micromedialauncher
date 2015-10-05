@@ -151,6 +151,7 @@ class Interface(object):
            (event.keysym_num >= 65 and event.keysym_num <= 90) or \
            (event.keysym_num >= 48 and event.keysym_num <= 57):
             self._listbox_search(event.keysym.lower())
+        cursel = event.widget.curselection()[0]
 
     def mark_watched(self, item_name, watched_color):
         """
