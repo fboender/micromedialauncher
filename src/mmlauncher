@@ -1,14 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf8 -*-
 
 import sys
 import os
-import ConfigParser
+import configparser
 import json
 import traceback
 try:
-    from Tkinter import *
-    import tkMessageBox
+    from tkinter import *
 except ImportError:
     sys.stderr.write("Looks like the Tkinter toolkit is not installed.\n"
                      "Install it with:  sudo apt-get install python-tk\n")
@@ -59,7 +58,7 @@ class Interface(object):
 
     def report_callback_exception(self, *args):
         err = traceback.format_exception(*args)
-        tkMessageBox.showerror('Exception', str(args[1]))
+        #tkMessageBox.showerror('Exception', str(args[1]))
         for line in err:
             sys.stderr.write(line)
 
@@ -263,7 +262,7 @@ class Controller(object):
         self.handle_path(path)
 
     def read_config(self, config_files):
-        self.cfg = ConfigParser.ConfigParser()
+        self.cfg = configparser.ConfigParser()
         self.cfg.read(config_files)
 
         # Read media meta types
@@ -275,7 +274,7 @@ class Controller(object):
         for media_name, media_meta in media_types.items():
             self.mediameta.add_media_type(media_name,
                                           media_meta['color'],
-                                          media_meta['command'])
+                                          media_meta['commands'])
 
         # Read media extensions
         for extension, media_name in self.cfg.items('extensions'):
@@ -283,12 +282,12 @@ class Controller(object):
 
     def read_watched_file(self):
         try:
-            return json.load(file(self.watched_file, 'r'))
+            return json.load(open(self.watched_file, 'r'))
         except IOError:
             return {}
 
     def write_watched_file(self):
-        json.dump(self.watched, file(self.watched_file, 'w'))
+        json.dump(self.watched, open(self.watched_file, 'w'))
 
     def handle_path(self, path):
         # Prevent escape from start path if jail_root
@@ -322,7 +321,6 @@ class Controller(object):
         if fname == self.back_text:
             fname = '..'
         fullpath = os.path.realpath(os.path.join(self.path, fname))
-        print fullpath, self.start_path
         self.handle_path(fullpath)
         if not os.path.isdir(fullpath):
             self.interface.mark_watched(fname, self.cfg.get('main', 'watched_color'))
